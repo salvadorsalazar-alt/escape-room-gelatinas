@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Permissions-Policy" content="autoplay=*">
 <title>Gelatinas Algebraicas – Escape Room</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
@@ -325,48 +326,93 @@ html, body {
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════
-   AUDIO — Web Audio API sin setTimeout
-   Todos los sonidos usan ctx.currentTime para scheduling.
-   El AudioContext se mantiene vivo con un nodo silencioso.
-   audioDerrota usa OfflineAudioContext para poder sonar
-   incluso cuando el contexto esté suspendido (timer).
-   ═══════════════════════════════════════════════════════════ */
-var AudioCtx = window.AudioContext || window.webkitAudioContext;
-var actx     = null;
-var bufDerrota  = null; // buffer pre-renderizado de derrota
-var bufVictoria = null; // buffer pre-renderizado de victoria
+   AUDIO — Sistema compatible con Chrome Autoplay Policy
+   ───────────────────────────────────────────────────────────
+   REGLA DE CHROME: AudioContext.resume() devuelve una Promise.
+   Esa Promise SÍ se resuelve aunque estemos fuera del gesto,
+   porque el gesto YA ocurrió — Chrome solo exige que resume()
+   se LLAME dentro del gesto, no que el .then() esté en él.
+   El error anterior era llamar resume() desde setTimeout
+   (completamente fuera del gesto). Eso Chrome sí rechaza.
 
-/* ── Crear y mantener vivo el AudioContext ─────────────────── */
-function getCtx() {
-  if (!AudioCtx) return null;
+   SOLUCIÓN DEFINITIVA:
+   1. new AudioContext() → dentro del click (gesto de usuario)
+   2. actx.resume()     → dentro del click (mismo call-stack)
+   3. .then(fn)         → Chrome lo acepta: el gesto ya ocurrió
+   4. NUNCA llamar resume() desde setTimeout o setInterval
+   ═══════════════════════════════════════════════════════════ */
+var AudioCtx  = window.AudioContext || window.webkitAudioContext;
+var actx      = null;    // AudioContext compartido
+var _listo    = false;   // true cuando el ctx está en 'running'
+var _cola     = [];      // sonidos encolados antes del desbloqueo
+var _kaTimer  = null;    // keep-alive interval
+var bufDerrota = null;   // buffer pre-renderizado de derrota
+
+/* ── Keep-alive pasivo: NO llama resume(), solo toca silencio ── */
+function _keepAlive() {
+  if (!actx || actx.state !== 'running') return;
   try {
-    if (!actx) {
-      actx = new AudioCtx();
-      // Nodo silencioso continuo: evita que Chrome suspenda el
-      // contexto por inactividad dentro del iframe de Genially
-      var silencio = actx.createGain();
-      silencio.gain.value = 0;
-      var osc = actx.createOscillator();
-      osc.connect(silencio);
-      silencio.connect(actx.destination);
-      osc.start();
-    }
-  } catch(e) { return null; }
-  try { if (actx.state !== 'running') actx.resume(); } catch(e) {}
+    var b = actx.createBuffer(1, 1, actx.sampleRate);
+    var s = actx.createBufferSource();
+    s.buffer = b;
+    s.connect(actx.destination);
+    s.start(0);
+  } catch(e) {}
+}
+
+function _iniciarKeepAlive() {
+  if (_kaTimer) return;
+  _kaTimer = setInterval(_keepAlive, 20000);
+}
+
+/* ── Marcar como listo y vaciar cola ───────────────────────── */
+function _activar() {
+  if (_listo) return;
+  _listo = true;
+  _iniciarKeepAlive();
+  preRenderDerrota();
+  var q = _cola.slice(); _cola = [];
+  for (var i = 0; i < q.length; i++) { try { q[i](actx); } catch(e) {} }
+}
+
+/* ── Desbloquear: DEBE llamarse dentro del handler del click ── */
+function desbloquear() {
+  if (!AudioCtx) return;
+
+  // Crear el contexto dentro del gesto (requisito de Chrome)
+  if (!actx) {
+    try { actx = new AudioCtx(); } catch(e) { return; }
+  }
+
+  if (_listo) return; // ya desbloqueado, nada que hacer
+
+  if (actx.state === 'running') {
+    _activar();
+    return;
+  }
+
+  // resume() dentro del mismo call-stack del click.
+  // La Promise .then() Chrome la acepta porque el gesto ya ocurrió.
+  try {
+    actx.resume().then(function() {
+      if (actx.state === 'running') _activar();
+    }).catch(function() {});
+  } catch(e) {}
+}
+
+/* ── Obtener el contexto si está listo ─────────────────────── */
+function getCtx() {
+  if (!actx || !_listo) return null;
   return actx;
 }
 
-function desbloquear() {
-  var ctx = getCtx();
-  if (ctx && ctx.state !== 'running') {
-    ctx.resume().then(function() {
-      // Pre-renderizar buffers después de desbloquear
-      if (!bufDerrota)  preRenderDerrota();
-      if (!bufVictoria) preRenderVictoria();
-    }).catch(function(){});
-  } else if (ctx) {
-    if (!bufDerrota)  preRenderDerrota();
-    if (!bufVictoria) preRenderVictoria();
+/* ── Ejecutar fn(ctx) ahora o encolar si aún no está listo ─── */
+function _conCtx(fn) {
+  if (_listo && actx) {
+    try { fn(actx); } catch(e) {}
+  } else {
+    _cola.push(fn);
+    if (_cola.length > 5) _cola.shift(); // no acumular sonidos viejos
   }
 }
 
@@ -440,57 +486,63 @@ function platillo(ctx, t, vol) {
    ════════════════════════════════════════════════════════════ */
 
 function audioInicio() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.05;
-  nota(ctx, 523, t,       0.18, 0.25, 'triangle');
-  nota(ctx, 659, t+0.13,  0.18, 0.22, 'triangle');
-  nota(ctx, 784, t+0.26,  0.20, 0.20, 'triangle');
-  nota(ctx, 1047,t+0.40,  0.35, 0.18, 'triangle');
-  nota(ctx, 1047,t+0.40,  0.12, 0.20, 'sine');
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.05;
+    nota(ctx, 523, t,       0.18, 0.25, 'triangle');
+    nota(ctx, 659, t+0.13,  0.18, 0.22, 'triangle');
+    nota(ctx, 784, t+0.26,  0.20, 0.20, 'triangle');
+    nota(ctx, 1047,t+0.40,  0.35, 0.18, 'triangle');
+    nota(ctx, 1047,t+0.40,  0.12, 0.20, 'sine');
+  });
 }
 
 function audioCorrecto() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.03;
-  nota(ctx, 523,  t,      0.12, 0.28, 'sine');
-  nota(ctx, 659,  t+0.10, 0.12, 0.26, 'sine');
-  nota(ctx, 784,  t+0.20, 0.12, 0.24, 'sine');
-  nota(ctx, 1047, t+0.30, 0.25, 0.22, 'sine');
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.03;
+    nota(ctx, 523,  t,      0.12, 0.28, 'sine');
+    nota(ctx, 659,  t+0.10, 0.12, 0.26, 'sine');
+    nota(ctx, 784,  t+0.20, 0.12, 0.24, 'sine');
+    nota(ctx, 1047, t+0.30, 0.25, 0.22, 'sine');
+  });
 }
 
 function audioIncorrecto() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.03;
-  nota(ctx, 300, t,      0.15, 0.20, 'sawtooth');
-  nota(ctx, 220, t+0.14, 0.30, 0.18, 'sawtooth');
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.03;
+    nota(ctx, 300, t,      0.15, 0.20, 'sawtooth');
+    nota(ctx, 220, t+0.14, 0.30, 0.18, 'sawtooth');
+  });
 }
 
 function audioCandado() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.02;
-  ruido(ctx, t, 0.05, 0.30, 0.01);
-  nota(ctx, 880,  t+0.06, 0.15, 0.20, 'sine');
-  nota(ctx, 1108, t+0.18, 0.20, 0.18, 'sine');
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.02;
+    ruido(ctx, t, 0.05, 0.30, 0.01);
+    nota(ctx, 880,  t+0.06, 0.15, 0.20, 'sine');
+    nota(ctx, 1108, t+0.18, 0.20, 0.18, 'sine');
+  });
 }
 
 function audioPista() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.03;
-  nota(ctx, 440, t,      0.10, 0.15, 'sine');
-  nota(ctx, 554, t+0.12, 0.20, 0.13, 'sine');
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.03;
+    nota(ctx, 440, t,      0.10, 0.15, 'sine');
+    nota(ctx, 554, t+0.12, 0.20, 0.13, 'sine');
+  });
 }
 
 function audioUrgente() {
-  var ctx = getCtx(); if (!ctx) return;
-  nota(ctx, 880, ctx.currentTime+0.01, 0.08, 0.15, 'square');
+  _conCtx(function(ctx) {
+    nota(ctx, 880, ctx.currentTime+0.01, 0.08, 0.15, 'square');
+  });
 }
 
 /* ════════════════════════════════════════════════════════════
    VICTORIA — fanfarria completa programada sin setTimeout
    ════════════════════════════════════════════════════════════ */
 function audioVictoria() {
-  var ctx = getCtx(); if (!ctx) return;
-  var t0 = ctx.currentTime + 0.05;
+  _conCtx(function(ctx) {
+    var t0 = ctx.currentTime + 0.05;
 
   // ── Redoble de entrada ──────────────────────────────────────
   var rr=[0,0.06,0.12,0.18,0.24,0.30,0.36,0.40,0.44,0.47,0.50,0.52,0.54,0.56,0.58,0.60];
@@ -534,6 +586,7 @@ function audioVictoria() {
   });
   bombo(ctx,t0+3.60); bombo(ctx,t0+4.32);
   platillo(ctx,t0+3.60,0.20); platillo(ctx,t0+4.32,0.35);
+  });
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -613,17 +666,12 @@ function preRenderDerrota() {
   }).catch(function(){});
 }
 
-function preRenderVictoria() {
-  // La victoria se toca en tiempo real (siempre hay gesto previo)
-  // Solo marcamos como listo
-  bufVictoria = true;
-}
+/* preRenderVictoria: la victoria se toca en tiempo real, buffer no necesario */
 
 function audioDerrota() {
-  // Intentar reproducir el buffer pre-renderizado
-  if (bufDerrota && actx) {
+  // Camino 1: reproducir el buffer pre-renderizado (mejor calidad)
+  if (bufDerrota && actx && actx.state === 'running') {
     try {
-      if (actx.state !== 'running') actx.resume();
       var src  = actx.createBufferSource();
       var gain = actx.createGain();
       src.buffer = bufDerrota;
@@ -633,17 +681,17 @@ function audioDerrota() {
       return;
     } catch(e) {}
   }
-  // Fallback: reproducción en tiempo real si el buffer no está listo
-  var ctx = getCtx(); if (!ctx) return;
-  var t = ctx.currentTime + 0.05;
-  // Secuencia simple de derrota
-  [[349,0.0,0.3,0.30],[311,0.32,0.3,0.28],[277,0.65,0.3,0.26],
-   [247,0.97,0.4,0.24],[220,1.38,0.5,0.22],[196,1.90,0.8,0.20]
-  ].forEach(function(n){
-    nota(ctx,n[0],t+n[1],n[2],n[3],'sawtooth');
-    nota(ctx,n[0]/2,t+n[1],n[2],n[3]*0.7,'triangle');
+  // Camino 2: síntesis en tiempo real vía _conCtx
+  _conCtx(function(ctx) {
+    var t = ctx.currentTime + 0.05;
+    [[349,0.0,0.3,0.30],[311,0.32,0.3,0.28],[277,0.65,0.3,0.26],
+     [247,0.97,0.4,0.24],[220,1.38,0.5,0.22],[196,1.90,0.8,0.20]
+    ].forEach(function(n){
+      nota(ctx,n[0],t+n[1],n[2],n[3],'sawtooth');
+      nota(ctx,n[0]/2,t+n[1],n[2],n[3]*0.7,'triangle');
+    });
+    bombo(ctx, t); bombo(ctx, t+1.88);
   });
-  bombo(ctx, t); bombo(ctx, t+1.88);
 }
 
 
@@ -1105,29 +1153,32 @@ function ganar() {
   }
   pantalla('s-win');
   // ── Anunciar el equipo ganador por voz tras la fanfarria ──────
-  if (window.speechSynthesis) {
-    // Esperar ~3s a que la fanfarria llegue a su punto álgido
-    setTimeout(function() {
-      window.speechSynthesis.cancel(); // limpiar cola previa
-      var msg = new SpeechSynthesisUtterance();
-      msg.text = '¡Felicidades! El equipo ' + E.equipo + ' ha liberado la receta secreta. ¡Excelente trabajo!';
-      msg.lang  = 'es-MX';
-      msg.pitch = 1.1;
-      msg.rate  = 0.92;
-      msg.volume = 1.0;
-      // Intentar voz en español; si no hay, usar la disponible
-      var voces = window.speechSynthesis.getVoices();
-      var vozES = null;
-      for (var i = 0; i < voces.length; i++) {
-        if (voces[i].lang && voces[i].lang.indexOf('es') === 0) {
-          vozES = voces[i];
-          if (voces[i].lang === 'es-MX' || voces[i].lang === 'es-419') break;
-        }
-      }
-      if (vozES) msg.voice = vozES;
-      window.speechSynthesis.speak(msg);
-    }, 3000);
-  }
+  try {
+    if (window.speechSynthesis) {
+      // Esperar ~3s a que la fanfarria llegue a su punto álgido
+      setTimeout(function() {
+        try {
+          window.speechSynthesis.cancel();
+          var msg = new SpeechSynthesisUtterance();
+          msg.text = '¡Felicidades! El equipo ' + E.equipo + ' ha liberado la receta secreta. ¡Excelente trabajo!';
+          msg.lang  = 'es-MX';
+          msg.pitch = 1.1;
+          msg.rate  = 0.92;
+          msg.volume = 1.0;
+          var voces = window.speechSynthesis.getVoices();
+          var vozES = null;
+          for (var i = 0; i < voces.length; i++) {
+            if (voces[i].lang && voces[i].lang.indexOf('es') === 0) {
+              vozES = voces[i];
+              if (voces[i].lang === 'es-MX' || voces[i].lang === 'es-419') break;
+            }
+          }
+          if (vozES) msg.voice = vozES;
+          window.speechSynthesis.speak(msg);
+        } catch(e) {}
+      }, 3000);
+    }
+  } catch(e) {}
 }
 
 function ganarParcial() {
@@ -1191,18 +1242,24 @@ if(document.readyState==='loading'){
   vincular();
 }
 // Desbloquear audio en cualquier interacción con el documento
-document.addEventListener('click',      function(){ desbloquear(); }, {passive:true});
-document.addEventListener('touchstart', function(){ desbloquear(); }, {passive:true});
-document.addEventListener('keydown',    function(){ desbloquear(); }, {passive:true});
+document.addEventListener('click',       function(){ desbloquear(); }, {passive:true});
+document.addEventListener('touchstart',  function(){ desbloquear(); }, {passive:true});
+document.addEventListener('touchend',    function(){ desbloquear(); }, {passive:true});
+document.addEventListener('pointerdown', function(){ desbloquear(); }, {passive:true});
+document.addEventListener('keydown',     function(){ desbloquear(); }, {passive:true});
+// Genially comunica eventos del contenedor padre vía postMessage
+window.addEventListener('message', function(){ desbloquear(); }, {passive:true});
 // Pre-cargar voces de síntesis de voz (algunos navegadores las cargan de forma lazy)
-if (window.speechSynthesis) {
-  window.speechSynthesis.getVoices();
-  if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = function() {
-      window.speechSynthesis.getVoices();
-    };
+try {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = function() {
+        try { window.speechSynthesis.getVoices(); } catch(e) {}
+      };
+    }
   }
-}
+} catch(e) {}
 
 })(); // fin IIFE
 </script>
