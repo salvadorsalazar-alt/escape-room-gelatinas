@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gelatinas Algebraicas – Escape Room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+
+/* ══════════════════════════════════════════════════════════════
+   RESET TOTAL — anula cualquier CSS que Genially inyecte
+   Se aplica al contenedor raíz del juego con máxima especificidad
+   ══════════════════════════════════════════════════════════════ */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #1a0533 !important;
+  font-size: 16px !important;
+  line-height: normal !important;
+}
+
+/* ── El wrapper es el lienzo fijo 1280×768 ── */
+#esc-root {
+  all: initial;                  /* resetea TODO */
+  display: block;
+  position: relative;
+  width: 1280px;
+  height: 768px;
+  overflow: hidden;
+  background: #1a0533;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  color: #fff;
+  box-sizing: border-box;
+  transform-origin: 0 0;         /* escala desde esquina sup-izq */
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Desde aquí todo hereda de #esc-root ── */
+#esc-root *, #esc-root *::before, #esc-root *::after {
+  box-sizing: border-box;
+}
+
+#esc-root .screen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1280px;
+  height: 768px;
+  display: none;
+  overflow: hidden;
+}
+#esc-root .screen.active { display: flex; }
+
+#esc-root .bg-gelatinas {
+  background:
+    radial-gradient(ellipse 300px 200px at 10% 80%, rgba(192,57,43,.13) 0%, transparent 70%),
+    radial-gradient(ellipse 200px 300px at 90% 20%, rgba(142,68,173,.13) 0%, transparent 70%),
+    linear-gradient(145deg, #1a0533 0%, #2d0a4e 40%, #1a0533 100%);
+}
+
+/* ══ INTRO ══ */
+#esc-root #s-intro { flex-direction:column; align-items:center; justify-content:center; }
+#esc-root #s-intro .bg-gelatinas { position:absolute; top:0; left:0; right:0; bottom:0; z-index:0; }
+#esc-root .intro-content { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:18px; }
+#esc-root .titulo-grande { font-family:'Bangers',cursive; font-size:76px; color:#ffd700; letter-spacing:4px; text-shadow:0 4px 0 #b8860b, 0 8px 24px rgba(0,0,0,.6); line-height:1; text-align:center; }
+#esc-root .subtitulo { font-size:22px; color:#f8c8f8; font-weight:700; letter-spacing:1px; text-align:center; }
+#esc-root .descripcion { font-size:15px; color:#d4b8e8; max-width:600px; text-align:center; line-height:1.7; }
+#esc-root .jelly-row { display:flex; gap:24px; align-items:flex-end; margin:10px 0; }
+#esc-root .jelly { width:70px; height:80px; border-radius:50% 50% 40% 40%/60% 60% 40% 40%; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:900; color:#fff; border:3px solid rgba(255,255,255,.3); animation:jiggle 2s ease-in-out infinite; }
+#esc-root .jelly:nth-child(2){animation-delay:.3s}
+#esc-root .jelly:nth-child(3){animation-delay:.6s}
+#esc-root .jelly:nth-child(4){animation-delay:.9s}
+#esc-root .jelly:nth-child(5){animation-delay:1.2s}
+#esc-root .j1{background:linear-gradient(135deg,#e74c3c,#c0392b)}
+#esc-root .j2{background:linear-gradient(135deg,#8e44ad,#6c3483)}
+#esc-root .j3{background:linear-gradient(135deg,#27ae60,#1e8449)}
+#esc-root .j4{background:linear-gradient(135deg,#e67e22,#ca6f1e)}
+#esc-root .j5{background:linear-gradient(135deg,#2980b9,#1a5276)}
+@keyframes jiggle{0%,100%{transform:rotate(-3deg) scaleY(1)}50%{transform:rotate(3deg) scaleY(1.05)}}
+#esc-root .btn-iniciar { margin-top:10px; padding:18px 60px; font-family:'Bangers',cursive; font-size:32px; letter-spacing:3px; background:linear-gradient(135deg,#ffd700,#ff8c00); color:#1a0533; border:none; border-radius:50px; cursor:pointer; box-shadow:0 6px 0 #b8860b, 0 10px 30px rgba(0,0,0,.55); transition:all .15s; text-transform:uppercase; }
+#esc-root .btn-iniciar:hover { transform:translateY(-3px); box-shadow:0 9px 0 #b8860b }
+#esc-root .equipo-input { display:flex; gap:12px; align-items:center; }
+#esc-root .equipo-input input { padding:10px 20px; border-radius:30px; border:3px solid #ffd700; background:#2d0a4e; color:#fff; font-family:'Nunito',sans-serif; font-size:16px; font-weight:700; width:260px; outline:none; }
+#esc-root .equipo-input input::placeholder { color:#a88bc0; }
+#esc-root .hint-text { font-size:13px; color:#a88bc0; margin-top:-8px; }
+
+/* ══ JUEGO ══ */
+#esc-root #s-game { flex-direction:row; }
+#esc-root .sidebar { width:240px; min-width:240px; background:linear-gradient(180deg,#2d0a4e,#1a0533); border-right:3px solid #ffd700; display:flex; flex-direction:column; padding:14px 14px; gap:8px; overflow:hidden; }
+#esc-root .logo-small { font-family:'Bangers',cursive; font-size:24px; color:#ffd700; text-align:center; letter-spacing:2px; text-shadow:0 2px 0 #b8860b; }
+#esc-root .equipo-badge { background:#ffd700; color:#1a0533; border-radius:20px; padding:6px 14px; font-weight:800; font-size:14px; text-align:center; }
+#esc-root .progreso-titulo { font-size:13px; color:#d4b8e8; font-weight:700; text-align:center; letter-spacing:1px; text-transform:uppercase; }
+#esc-root .candados { display:flex; flex-direction:column; gap:5px; }
+#esc-root .candado-item { display:flex; align-items:center; gap:8px; padding:5px 10px; border-radius:10px; background:rgba(255,255,255,.05); border:2px solid transparent; transition:all .3s; }
+#esc-root .candado-item.resuelto { background:rgba(39,174,96,.2); border-color:#27ae60; }
+#esc-root .candado-item.activo { background:rgba(255,215,0,.15); border-color:#ffd700; animation:pulse-border 1.5s infinite; }
+@keyframes pulse-border{0%,100%{border-color:#ffd700}50%{border-color:#ff8c00}}
+#esc-root .candado-item .icon { font-size:18px; }
+#esc-root .candado-item .info { flex:1; }
+#esc-root .candado-item .num { font-size:11px; color:#a88bc0; font-weight:700; text-transform:uppercase; }
+#esc-root .candado-item .tema { font-size:11px; color:#f0e0ff; font-weight:700; line-height:1.3; }
+#esc-root .puntaje-box { background:rgba(255,215,0,.1); border:2px solid #ffd700; border-radius:12px; padding:8px 10px; text-align:center; }
+#esc-root .pts-label { font-size:12px; color:#ffd700; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+#esc-root .pts-num { font-size:32px; font-weight:900; color:#fff; line-height:1; }
+#esc-root .pts-sub { font-size:11px; color:#a88bc0; }
+#esc-root .temporizador { background:rgba(200,0,0,.15); border:2px solid #e74c3c; border-radius:12px; padding:7px 10px; text-align:center; }
+#esc-root .t-label { font-size:11px; color:#e74c3c; font-weight:700; text-transform:uppercase; }
+#esc-root .t-time { font-family:'Bangers',cursive; font-size:30px; color:#fff; letter-spacing:2px; text-shadow:0 2px 8px rgba(231,76,60,.53); }
+#esc-root .temporizador.urgente .t-time { color:#ff4444; animation:parpadeo .5s infinite; }
+@keyframes parpadeo{50%{opacity:.4}}
+#esc-root .main-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#esc-root .topbar { height:60px; background:linear-gradient(90deg,#2d0a4e,#1a0533); border-bottom:3px solid #ffd700; display:flex; align-items:center; padding:0 28px; gap:20px; }
+#esc-root .nivel-badge { font-family:'Bangers',cursive; font-size:22px; color:#ffd700; letter-spacing:2px; }
+#esc-root .nivel-desc { font-size:15px; color:#d4b8e8; font-weight:600; }
+#esc-root .pistas-btn { margin-left:auto; padding:8px 20px; background:rgba(255,165,0,.15); border:2px solid #ff8c00; color:#ff8c00; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; border-radius:20px; cursor:pointer; transition:all .2s; }
+#esc-root .content-area { flex:1; display:flex; overflow:hidden; }
+#esc-root .pregunta-panel { flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
+#esc-root .contexto-card { background:linear-gradient(135deg,rgba(142,68,173,.25),rgba(44,62,80,.25)); border:2px solid #8e44ad; border-radius:16px; padding:18px 22px; }
+#esc-root .ctx-titulo { font-size:13px; color:#c39bd3; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+#esc-root .ctx-texto { font-size:15px; color:#f0e0ff; line-height:1.7; }
+#esc-root .pregunta-box { background:rgba(255,215,0,.07); border:3px solid #ffd700; border-radius:20px; padding:22px 28px; }
+#esc-root .q-label { font-size:12px; color:#ffd700; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+#esc-root .q-texto { font-size:20px; color:#fff; font-weight:700; line-height:1.5; }
+#esc-root .q-formula { font-size:26px; color:#ffd700; font-weight:900; font-family:'Bangers',cursive; letter-spacing:2px; margin-top:8px; text-align:center; }
+#esc-root .opciones-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+#esc-root .opcion-btn { padding:16px 20px; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.2); border-radius:14px; color:#f0e0ff; font-family:'Nunito',sans-serif; font-size:16px; font-weight:700; cursor:pointer; transition:all .2s; text-align:left; display:flex; align-items:center; gap:12px; }
+#esc-root .opcion-btn .letra { width:32px; height:32px; border-radius:50%; background:rgba(255,215,0,.15); border:2px solid #ffd700; color:#ffd700; font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#esc-root .opcion-btn:hover:not(:disabled) { background:rgba(255,215,0,.12); border-color:#ffd700; transform:translateX(4px); }
+#esc-root .opcion-btn.correcta { background:rgba(39,174,96,.25)!important; border-color:#27ae60!important; }
+#esc-root .opcion-btn.incorrecta { background:rgba(231,76,60,.25)!important; border-color:#e74c3c!important; }
+#esc-root .opcion-btn:disabled { cursor:default; }
+@keyframes flash-correct{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#esc-root .resp-abierta { display:flex; flex-direction:column; gap:12px; }
+#esc-root .resp-input-wrap { display:flex; gap:10px; }
+#esc-root .resp-input { flex:1; padding:14px 20px; background:rgba(255,255,255,.08); border:2px solid rgba(255,215,0,.5); border-radius:14px; color:#fff; font-family:'Nunito',sans-serif; font-size:18px; font-weight:700; outline:none; }
+#esc-root .resp-input:focus { border-color:#ffd700; }
+#esc-root .resp-input::placeholder { color:#a88bc0; }
+#esc-root .btn-verificar { padding:14px 28px; background:linear-gradient(135deg,#ffd700,#ff8c00); color:#1a0533; border:none; border-radius:14px; font-family:'Bangers',cursive; font-size:22px; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #b8860b; }
+#esc-root .feedback-ok  { padding:14px 20px; border-radius:14px; font-size:15px; font-weight:700; background:rgba(39,174,96,.2); border:2px solid #27ae60; color:#a9dfbf; margin-top:4px; }
+#esc-root .feedback-mal { padding:14px 20px; border-radius:14px; font-size:15px; font-weight:700; background:rgba(231,76,60,.2); border:2px solid #e74c3c; color:#f1948a; margin-top:4px; }
+#esc-root .safe-panel { width:280px; background:rgba(0,0,0,.3); border-left:3px solid #ffd700; display:flex; flex-direction:column; align-items:center; padding:24px 20px; gap:20px; }
+#esc-root .safe-img { font-size:90px; animation:safe-float 3s ease-in-out infinite; }
+@keyframes safe-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#esc-root .safe-title { font-family:'Bangers',cursive; font-size:24px; color:#ffd700; letter-spacing:2px; text-align:center; }
+#esc-root .safe-codigo { display:flex; gap:8px; }
+#esc-root .codigo-digit { width:48px; height:60px; border-radius:10px; border:3px solid #ffd700; background:#1a0533; display:flex; align-items:center; justify-content:center; font-family:'Bangers',cursive; font-size:32px; color:#ffd700; transition:all .4s; }
+#esc-root .codigo-digit.revelado { background:rgba(255,215,0,.15); }
+#esc-root .safe-progress { width:100%; background:rgba(255,255,255,.1); border-radius:10px; height:14px; overflow:hidden; border:2px solid rgba(255,215,0,.3); }
+#esc-root .safe-progress-bar { height:100%; background:linear-gradient(90deg,#ffd700,#ff8c00); border-radius:10px; transition:width .5s ease; }
+#esc-root .safe-hint { font-size:13px; color:#a88bc0; text-align:center; line-height:1.6; }
+#esc-root .safe-candados-vis { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+#esc-root .mini-lock { font-size:28px; transition:all .4s; }
+#esc-root .mini-lock.open { filter:sepia(1) hue-rotate(70deg) saturate(3); }
+
+/* ══ VICTORIA ══ */
+#esc-root #s-win { flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+#esc-root #s-win .bg-gelatinas { position:absolute; top:0; left:0; right:0; bottom:0; z-index:0; }
+#esc-root .win-content { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:18px; text-align:center; }
+#esc-root .win-emoji { font-size:100px; animation:bounce 1s infinite; }
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+#esc-root .win-titulo { font-family:'Bangers',cursive; font-size:80px; color:#ffd700; text-shadow:0 4px 0 #b8860b, 0 8px 30px #000; letter-spacing:4px; }
+#esc-root .win-stats { display:flex; gap:24px; }
+#esc-root .stat-card { background:rgba(255,215,0,.1); border:3px solid #ffd700; border-radius:20px; padding:16px 28px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+#esc-root .stat-num { font-family:'Bangers',cursive; font-size:48px; color:#ffd700; }
+#esc-root .stat-label { font-size:14px; color:#d4b8e8; font-weight:700; }
+#esc-root .receta-box { background:rgba(39,174,96,.15); border:3px solid #27ae60; border-radius:20px; padding:20px 32px; max-width:500px; }
+#esc-root .receta-titulo { font-family:'Bangers',cursive; font-size:26px; color:#27ae60; letter-spacing:2px; margin-bottom:10px; }
+#esc-root .receta-texto { font-size:15px; color:#a9dfbf; line-height:1.8; }
+#esc-root .confetti-container { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; overflow:hidden; }
+
+/* ══ DERROTA ══ */
+#esc-root #s-lose { flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+#esc-root #s-lose .bg-gelatinas { position:absolute; top:0; left:0; right:0; bottom:0; z-index:0; }
+#esc-root .lose-content { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center; }
+#esc-root .lose-titulo { font-family:'Bangers',cursive; font-size:70px; color:#e74c3c; text-shadow:0 4px 0 #922b21; letter-spacing:3px; }
+
+/* ══ MODAL ══ */
+#esc-root .modal-overlay { position:absolute; top:0; left:0; width:1280px; height:768px; background:rgba(0,0,0,.7); z-index:100; display:none; align-items:center; justify-content:center; }
+#esc-root .modal-overlay.abierto { display:flex; }
+#esc-root .modal-box { background:linear-gradient(135deg,#2d0a4e,#1a0533); border:3px solid #ffd700; border-radius:24px; padding:32px; max-width:520px; width:90%; display:flex; flex-direction:column; gap:16px; }
+#esc-root .modal-titulo { font-family:'Bangers',cursive; font-size:32px; color:#ffd700; letter-spacing:2px; }
+#esc-root .modal-texto { font-size:16px; color:#f0e0ff; line-height:1.7; }
+#esc-root .modal-close { align-self:flex-end; padding:10px 28px; background:linear-gradient(135deg,#ffd700,#ff8c00); color:#1a0533; border:none; border-radius:20px; font-family:'Bangers',cursive; font-size:20px; letter-spacing:2px; cursor:pointer; }
+
+/* ══ BOTONES ══ */
+#esc-root .btn-siguiente { padding:14px 36px; background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; border:none; border-radius:14px; font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 0 #145a32; display:none; }
+#esc-root .btn-siguiente.visible { display:inline-block; }
+#esc-root .btn-reiniciar { padding:14px 40px; font-family:'Bangers',cursive; font-size:28px; letter-spacing:2px; background:linear-gradient(135deg,#ffd700,#ff8c00); color:#1a0533; border:none; border-radius:30px; cursor:pointer; box-shadow:0 5px 0 #b8860b; }
+#esc-root .parcial-box { background:rgba(231,76,60,.15); border:3px solid #e74c3c; border-radius:20px; padding:20px 32px; max-width:500px; text-align:center; }
+#esc-root .parcial-titulo { font-family:'Bangers',cursive; font-size:26px; color:#e74c3c; letter-spacing:2px; margin-bottom:10px; }
+#esc-root .parcial-texto { font-size:15px; color:#f1948a; line-height:1.8; }
+
+@keyframes cfFall { 0%{top:-20px;transform:rotate(0deg)} 100%{top:105%;transform:rotate(720deg)} }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     #esc-root: contenedor raíz 1280×768 — escala automáticamente
+     ══════════════════════════════════════════════════════════ -->
+<div id="esc-root">
+
+<!-- PANTALLA: INTRO -->
+<div id="s-intro" class="screen active">
+  <div class="bg-gelatinas"></div>
+  <div class="intro-content">
+    <div class="titulo-grande">&#127854; Gelatinas Algebraicas &#127854;</div>
+    <div class="subtitulo">Escape Room Digital &middot; Puesto Las Conchitas &middot; Zit&aacute;cuaro, Mich.</div>
+    <div class="jelly-row">
+      <div class="jelly j1">+</div>
+      <div class="jelly j2">&minus;</div>
+      <div class="jelly j3">&times;</div>
+      <div class="jelly j4">&divide;</div>
+      <div class="jelly j5">x&sup2;</div>
+    </div>
+    <div class="descripcion">
+      &iexcl;El libro de recetas secretas qued&oacute; atrapado en la caja fuerte!<br>
+      Resuelve <strong>5 acertijos algebraicos</strong> para liberar el c&oacute;digo y salvar el negocio familiar.
+    </div>
+    <div class="equipo-input">
+      <input type="text" id="nombre-equipo" placeholder="Nombre de tu equipo..." maxlength="30">
+      <button class="btn-iniciar" id="btn-iniciar">&#161;Jugar!</button>
+    </div>
+    <div class="hint-text">&#9201; Tiempo l&iacute;mite: 20 minutos &middot; 5 candados &middot; &#161;Buena suerte!</div>
+  </div>
+</div>
+
+<!-- PANTALLA: JUEGO -->
+<div id="s-game" class="screen">
+  <div class="sidebar">
+    <div class="logo-small">&#127854; Las Conchitas</div>
+    <div class="equipo-badge" id="badge-equipo">Equipo</div>
+    <div class="puntaje-box">
+      <div class="pts-label">&#11088; Puntos</div>
+      <div class="pts-num" id="pts-display">0</div>
+      <div class="pts-sub">de 500 posibles</div>
+    </div>
+    <div class="temporizador" id="temporizador-box">
+      <div class="t-label">&#9201; Tiempo</div>
+      <div class="t-time" id="t-display">20:00</div>
+    </div>
+    <div class="progreso-titulo">&#128274; Candados</div>
+    <div class="candados" id="lista-candados"></div>
+  </div>
+  <div class="main-area">
+    <div class="topbar">
+      <div class="nivel-badge" id="nivel-badge">Candado 1</div>
+      <div class="nivel-desc" id="nivel-desc">Suma y Resta de Polinomios</div>
+      <button class="pistas-btn" id="btn-pista">&#128161; Pista (&minus;10 pts)</button>
+    </div>
+    <div class="content-area">
+      <div class="pregunta-panel" id="pregunta-panel"></div>
+      <div class="safe-panel">
+        <div class="safe-img">&#128274;</div>
+        <div class="safe-title">CAJA FUERTE</div>
+        <div class="safe-candados-vis" id="safe-locks"></div>
+        <div class="safe-codigo" id="safe-codigo"></div>
+        <div style="width:100%">
+          <div style="font-size:12px;color:#a88bc0;text-align:center;margin-bottom:6px;">Progreso</div>
+          <div class="safe-progress"><div class="safe-progress-bar" id="safe-bar" style="width:0%"></div></div>
+        </div>
+        <div class="safe-hint" id="safe-hint">Resuelve cada acertijo para descubrir los d&iacute;gitos del c&oacute;digo secreto.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA: VICTORIA -->
+<div id="s-win" class="screen">
+  <div class="bg-gelatinas"></div>
+  <div class="confetti-container" id="confetti-c"></div>
+  <div class="win-content">
+    <div class="win-emoji">&#127942;</div>
+    <div class="win-titulo" id="win-titulo">&#161;RECETA LIBERADA!</div>
+    <div style="font-size:24px;color:#f8c8f8;font-weight:700" id="win-equipo-name">Equipo campe&oacute;n</div>
+    <div class="win-stats">
+      <div class="stat-card"><div class="stat-num" id="win-pts">0</div><div class="stat-label">&#11088; Puntos</div></div>
+      <div class="stat-card"><div class="stat-num" id="win-time">0:00</div><div class="stat-label">&#9201; Tiempo restante</div></div>
+      <div class="stat-card"><div class="stat-num" id="win-code">?????</div><div class="stat-label">&#128273; C&oacute;digo</div></div>
+    </div>
+    <div class="receta-box" id="receta-box" style="display:none">
+      <div class="receta-titulo">&#128220; Receta Secreta Desbloqueada</div>
+      <div class="receta-texto" id="receta-texto"></div>
+    </div>
+    <div class="parcial-box" id="parcial-box" style="display:none">
+      <div class="parcial-titulo">&#128274; Receta a&uacute;n bloqueada</div>
+      <div class="parcial-texto" id="parcial-texto"></div>
+    </div>
+    <button class="btn-reiniciar" id="btn-reiniciar-win">&#128260; Jugar de Nuevo</button>
+  </div>
+</div>
+
+<!-- PANTALLA: DERROTA -->
+<div id="s-lose" class="screen">
+  <div class="bg-gelatinas"></div>
+  <div class="lose-content">
+    <div style="font-size:90px">&#9200;</div>
+    <div class="lose-titulo">&#161;SE ACAB&Oacute; EL TIEMPO!</div>
+    <div style="font-size:20px;color:#f8c8f8;font-weight:700">El puesto Las Conchitas necesita tu ayuda...</div>
+    <div style="font-size:16px;color:#d4b8e8;max-width:500px;line-height:1.7">
+      Repasa los temas de &aacute;lgebra y vuelve a intentarlo. &#161;La do&ntilde;a Conchita conf&iacute;a en ti!
+    </div>
+    <button class="btn-reiniciar" id="btn-reiniciar-lose" style="margin-top:10px">&#128260; Intentar de Nuevo</button>
+  </div>
+</div>
+
+<!-- MODAL: PISTA -->
+<div class="modal-overlay" id="modal-pista">
+  <div class="modal-box">
+    <div class="modal-titulo">&#128161; Pista del Acertijo</div>
+    <div class="modal-texto" id="modal-texto"></div>
+    <button class="modal-close" id="btn-cerrar-pista">Entendido</button>
+  </div>
+</div>
+
+</div><!-- /#esc-root -->
+
+<script>
+(function() {
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   AUDIO — Web Audio API sin setTimeout
+   Todos los sonidos usan ctx.currentTime para scheduling.
+   El AudioContext se mantiene vivo con un nodo silencioso.
+   audioDerrota usa OfflineAudioContext para poder sonar
+   incluso cuando el contexto esté suspendido (timer).
+   ═══════════════════════════════════════════════════════════ */
+var AudioCtx = window.AudioContext || window.webkitAudioContext;
+var actx     = null;
+var bufDerrota  = null; // buffer pre-renderizado de derrota
+var bufVictoria = null; // buffer pre-renderizado de victoria
+
+/* ── Crear y mantener vivo el AudioContext ─────────────────── */
+function getCtx() {
+  if (!AudioCtx) return null;
+  try {
+    if (!actx) {
+      actx = new AudioCtx();
+      // Nodo silencioso continuo: evita que Chrome suspenda el
+      // contexto por inactividad dentro del iframe de Genially
+      var silencio = actx.createGain();
+      silencio.gain.value = 0;
+      var osc = actx.createOscillator();
+      osc.connect(silencio);
+      silencio.connect(actx.destination);
+      osc.start();
+    }
+  } catch(e) { return null; }
+  try { if (actx.state !== 'running') actx.resume(); } catch(e) {}
+  return actx;
+}
+
+function desbloquear() {
+  var ctx = getCtx();
+  if (ctx && ctx.state !== 'running') {
+    ctx.resume().then(function() {
+      // Pre-renderizar buffers después de desbloquear
+      if (!bufDerrota)  preRenderDerrota();
+      if (!bufVictoria) preRenderVictoria();
+    }).catch(function(){});
+  } else if (ctx) {
+    if (!bufDerrota)  preRenderDerrota();
+    if (!bufVictoria) preRenderVictoria();
+  }
+}
+
+/* ── Nota básica: programa con currentTime, sin setTimeout ─── */
+function nota(ctx, freq, t, dur, vol, type) {
+  try {
+    var osc  = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.012);
+    gain.gain.setValueAtTime(vol, t + dur - 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  } catch(e) {}
+}
+
+/* ── Ruido (percusión) ─────────────────────────────────────── */
+function ruido(ctx, t, dur, vol, decay) {
+  try {
+    var sr  = ctx.sampleRate;
+    var buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
+    var d   = buf.getChannelData(0);
+    var k   = decay || 0.08;
+    for (var i = 0; i < d.length; i++)
+      d[i] = (Math.random()*2-1) * Math.exp(-i/(sr*k));
+    var src  = ctx.createBufferSource();
+    var gain = ctx.createGain();
+    src.buffer = buf;
+    gain.gain.setValueAtTime(vol, t);
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(t);
+  } catch(e) {}
+}
+
+/* ── Bombo sintetizado ─────────────────────────────────────── */
+function bombo(ctx, t) {
+  try {
+    var osc  = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.45);
+    ruido(ctx, t, 0.08, 0.35, 0.02);
+  } catch(e) {}
+}
+
+/* ── Platillo ──────────────────────────────────────────────── */
+function platillo(ctx, t, vol) {
+  try {
+    ruido(ctx, t, 0.5, vol || 0.15, 0.15);
+    var filt = ctx.createBiquadFilter();
+    filt.type = 'highpass'; filt.frequency.value = 5000;
+    // filtro aplicado via buffer secundario con gain
+    var g2 = ctx.createGain(); g2.gain.setValueAtTime(vol||0.15, t);
+    ruido(ctx, t, 0.4, vol||0.15, 0.12);
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════════════════════════
+   SONIDOS DEL JUEGO — todos usan ctx.currentTime
+   ════════════════════════════════════════════════════════════ */
+
+function audioInicio() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.05;
+  nota(ctx, 523, t,       0.18, 0.25, 'triangle');
+  nota(ctx, 659, t+0.13,  0.18, 0.22, 'triangle');
+  nota(ctx, 784, t+0.26,  0.20, 0.20, 'triangle');
+  nota(ctx, 1047,t+0.40,  0.35, 0.18, 'triangle');
+  nota(ctx, 1047,t+0.40,  0.12, 0.20, 'sine');
+}
+
+function audioCorrecto() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.03;
+  nota(ctx, 523,  t,      0.12, 0.28, 'sine');
+  nota(ctx, 659,  t+0.10, 0.12, 0.26, 'sine');
+  nota(ctx, 784,  t+0.20, 0.12, 0.24, 'sine');
+  nota(ctx, 1047, t+0.30, 0.25, 0.22, 'sine');
+}
+
+function audioIncorrecto() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.03;
+  nota(ctx, 300, t,      0.15, 0.20, 'sawtooth');
+  nota(ctx, 220, t+0.14, 0.30, 0.18, 'sawtooth');
+}
+
+function audioCandado() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.02;
+  ruido(ctx, t, 0.05, 0.30, 0.01);
+  nota(ctx, 880,  t+0.06, 0.15, 0.20, 'sine');
+  nota(ctx, 1108, t+0.18, 0.20, 0.18, 'sine');
+}
+
+function audioPista() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.03;
+  nota(ctx, 440, t,      0.10, 0.15, 'sine');
+  nota(ctx, 554, t+0.12, 0.20, 0.13, 'sine');
+}
+
+function audioUrgente() {
+  var ctx = getCtx(); if (!ctx) return;
+  nota(ctx, 880, ctx.currentTime+0.01, 0.08, 0.15, 'square');
+}
+
+/* ════════════════════════════════════════════════════════════
+   VICTORIA — fanfarria completa programada sin setTimeout
+   ════════════════════════════════════════════════════════════ */
+function audioVictoria() {
+  var ctx = getCtx(); if (!ctx) return;
+  var t0 = ctx.currentTime + 0.05;
+
+  // ── Redoble de entrada ──────────────────────────────────────
+  var rr=[0,0.06,0.12,0.18,0.24,0.30,0.36,0.40,0.44,0.47,0.50,0.52,0.54,0.56,0.58,0.60];
+  rr.forEach(function(dt){ ruido(ctx, t0+dt, 0.06, 0.25, 0.015); });
+  bombo(ctx, t0+0.65); platillo(ctx, t0+0.65, 0.22);
+
+  // ── Fanfarria principal en Do Mayor ─────────────────────────
+  // Trompeta (voz 1)
+  [[523.25,0.80,0.18,0.32],[523.25,1.00,0.18,0.32],[523.25,1.20,0.18,0.32],
+   [659.25,1.40,0.32,0.35],[783.99,1.74,0.32,0.35],[1046.5,2.08,0.50,0.38],
+   [783.99,2.60,0.18,0.30],[880.00,2.80,0.18,0.30],[1046.5,3.00,0.55,0.40]
+  ].forEach(function(n){ nota(ctx,n[0],t0+n[1],n[2],n[3],'sawtooth'); });
+
+  // Trombón (voz 2)
+  [[392.00,0.80,0.18,0.20],[392.00,1.00,0.18,0.20],[392.00,1.20,0.18,0.20],
+   [523.25,1.40,0.32,0.22],[659.25,1.74,0.32,0.22],[783.99,2.08,0.50,0.24],
+   [659.25,2.60,0.18,0.20],[698.46,2.80,0.18,0.20],[783.99,3.00,0.55,0.25]
+  ].forEach(function(n){ nota(ctx,n[0],t0+n[1],n[2],n[3],'triangle'); });
+
+  // Bajo (tuba)
+  [[130.81,0.80,0.35,0.28],[130.81,1.40,0.35,0.28],
+   [196.00,1.74,0.35,0.28],[130.81,2.08,0.55,0.30],[130.81,3.00,0.55,0.32]
+  ].forEach(function(n){ nota(ctx,n[0],t0+n[1],n[2],n[3],'sawtooth'); });
+
+  // Percusión sección 2
+  [0.80,1.40,1.74,2.08].forEach(function(dt){ bombo(ctx,t0+dt); });
+  [1.10,1.60,1.94,2.40].forEach(function(dt){ ruido(ctx,t0+dt,0.06,0.25,0.015); });
+  [0.80,1.40,2.08].forEach(function(dt){ platillo(ctx,t0+dt,0.15); });
+
+  // ── Coda triunfal ───────────────────────────────────────────
+  [[1046.5,3.60,0.22,0.35],[1174.7,3.84,0.22,0.35],
+   [1318.5,4.08,0.22,0.35],[1568.0,4.32,0.70,0.40],
+   [783.99,3.60,0.22,0.25],[880.00,3.84,0.22,0.25],
+   [987.77,4.08,0.22,0.25],[1174.7,4.32,0.70,0.28],
+   [261.63,3.60,1.20,0.30]
+  ].forEach(function(n){ nota(ctx,n[0],t0+n[1],n[2],n[3],'sawtooth'); });
+
+  // Redoble final
+  [3.30,3.36,3.42,3.47,3.51,3.54,3.56,3.58].forEach(function(dt){
+    ruido(ctx,t0+dt,0.06,0.25,0.015);
+  });
+  bombo(ctx,t0+3.60); bombo(ctx,t0+4.32);
+  platillo(ctx,t0+3.60,0.20); platillo(ctx,t0+4.32,0.35);
+}
+
+/* ════════════════════════════════════════════════════════════
+   DERROTA — pre-renderizada con OfflineAudioContext
+   Se puede reproducir aunque el contexto esté suspendido
+   porque el buffer ya está calculado en memoria.
+   ════════════════════════════════════════════════════════════ */
+function preRenderDerrota() {
+  if (!window.OfflineAudioContext && !window.webkitOfflineAudioContext) return;
+  var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  var dur = 4.5; // segundos totales
+  var sr  = 44100;
+  var offline;
+  try { offline = new OAC(1, Math.ceil(sr*dur), sr); } catch(e){ return; }
+
+  function notaOff(ctx, freq, t, d, vol, type) {
+    try {
+      var osc=ctx.createOscillator(); var gain=ctx.createGain();
+      osc.type=type||'sawtooth';
+      osc.frequency.setValueAtTime(freq,t);
+      gain.gain.setValueAtTime(0.001,t);
+      gain.gain.linearRampToValueAtTime(vol,t+0.02);
+      gain.gain.setValueAtTime(vol,t+d-0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+d);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t+d+0.05);
+    } catch(e){}
+  }
+  function ruidoOff(ctx,t,d,vol,dec) {
+    try {
+      var buf=ctx.createBuffer(1,Math.ceil(sr*d),sr);
+      var dd=buf.getChannelData(0);
+      for(var i=0;i<dd.length;i++) dd[i]=(Math.random()*2-1)*Math.exp(-i/(sr*(dec||0.08)));
+      var src=ctx.createBufferSource(); var g=ctx.createGain();
+      src.buffer=buf; g.gain.setValueAtTime(vol,t);
+      src.connect(g); g.connect(ctx.destination); src.start(t);
+    } catch(e){}
+  }
+  function bomboOff(ctx,t) {
+    try {
+      var osc=ctx.createOscillator(); var gain=ctx.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(150,t);
+      osc.frequency.exponentialRampToValueAtTime(40,t+0.3);
+      gain.gain.setValueAtTime(0.6,t);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t+0.45);
+      ruidoOff(ctx,t,0.08,0.35,0.02);
+    } catch(e){}
+  }
+
+  // Golpe inicial
+  bomboOff(offline, 0.05);
+  ruidoOff(offline, 0.05, 0.35, 0.40, 0.06);
+
+  // Descenso de metales en menor
+  [[349.23,0.55,0.30,0.30],[311.13,0.88,0.30,0.30],
+   [277.18,1.20,0.30,0.28],[246.94,1.52,0.38,0.28],
+   [220.00,1.92,0.55,0.32],[196.00,2.50,0.80,0.30]
+  ].forEach(function(n){ notaOff(offline,n[0],n[1],n[2],n[3],'sawtooth'); });
+
+  [[174.61,0.55,0.30,0.22],[155.56,0.88,0.30,0.22],
+   [138.59,1.20,0.30,0.20],[123.47,1.52,0.38,0.20],
+   [110.00,1.92,0.55,0.24],[98.00, 2.50,0.90,0.26]
+  ].forEach(function(n){ notaOff(offline,n[0],n[1],n[2],n[3],'triangle'); });
+
+  // Golpe final y zumbido
+  bomboOff(offline, 2.48);
+  ruidoOff(offline, 2.48, 0.35, 0.40, 0.06);
+  notaOff(offline, 55.0, 2.90, 1.20, 0.20, 'sine');
+  notaOff(offline, 73.4, 2.90, 1.10, 0.14, 'sine');
+
+  // Renderizar
+  offline.startRendering().then(function(renderedBuffer){
+    bufDerrota = renderedBuffer;
+  }).catch(function(){});
+}
+
+function preRenderVictoria() {
+  // La victoria se toca en tiempo real (siempre hay gesto previo)
+  // Solo marcamos como listo
+  bufVictoria = true;
+}
+
+function audioDerrota() {
+  // Intentar reproducir el buffer pre-renderizado
+  if (bufDerrota && actx) {
+    try {
+      if (actx.state !== 'running') actx.resume();
+      var src  = actx.createBufferSource();
+      var gain = actx.createGain();
+      src.buffer = bufDerrota;
+      gain.gain.setValueAtTime(1.0, actx.currentTime);
+      src.connect(gain); gain.connect(actx.destination);
+      src.start(actx.currentTime + 0.05);
+      return;
+    } catch(e) {}
+  }
+  // Fallback: reproducción en tiempo real si el buffer no está listo
+  var ctx = getCtx(); if (!ctx) return;
+  var t = ctx.currentTime + 0.05;
+  // Secuencia simple de derrota
+  [[349,0.0,0.3,0.30],[311,0.32,0.3,0.28],[277,0.65,0.3,0.26],
+   [247,0.97,0.4,0.24],[220,1.38,0.5,0.22],[196,1.90,0.8,0.20]
+  ].forEach(function(n){
+    nota(ctx,n[0],t+n[1],n[2],n[3],'sawtooth');
+    nota(ctx,n[0]/2,t+n[1],n[2],n[3]*0.7,'triangle');
+  });
+  bombo(ctx, t); bombo(ctx, t+1.88);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   ESCALA AUTOMÁTICA — ajusta #esc-root al viewport
+   Funciona con transform:scale sin afectar clicks
+   porque el translate compensa el origen
+   ═══════════════════════════════════════════════════ */
+function escalar() {
+  var root = document.getElementById('esc-root');
+  if (!root) return;
+  var vw = window.innerWidth  || document.documentElement.clientWidth  || 1280;
+  var vh = window.innerHeight || document.documentElement.clientHeight || 768;
+  var sc = Math.min(vw / 1280, vh / 768);
+  var tx = Math.max(0, (vw - 1280 * sc) / 2);
+  var ty = Math.max(0, (vh - 768  * sc) / 2);
+  root.style.transform = 'scale(' + sc + ')';
+  root.style.left = tx + 'px';
+  root.style.top  = ty + 'px';
+  root.style.position = 'absolute';
+}
+escalar();
+window.addEventListener('resize', escalar);
+setTimeout(escalar, 200);
+setTimeout(escalar, 800);
+
+/* ═══════════════════════════════════════════════════
+   BANCO DE PREGUNTAS — 4 por nivel (20 total)
+   ═══════════════════════════════════════════════════ */
+var BANCO = [
+  /* NIVEL 1 */
+  {nivel:1,tema:'Suma y Resta de Polinomios',tipo:'opcion',
+   contexto:'La señora Conchita produce dos sabores: fresa y limón. La ganancia de fresa es (3x² + 5x − 2) pesos y la de limón es (x² − 2x + 7) pesos.',
+   pregunta:'¿Cuál es la ganancia total sumando ambas expresiones?',
+   formula:'(3x² + 5x − 2) + (x² − 2x + 7)',
+   opciones:['4x² + 3x + 5','4x² + 7x − 5','2x² + 3x + 5','4x² + 3x − 5'],
+   correctaIdx:0,digito:'4',
+   pista:'Agrupa los términos semejantes: las x², las x y los números independientes.',
+   explicacion:'3x²+x²=4x², 5x−2x=3x, −2+7=5 → 4x²+3x+5'},
+  {nivel:1,tema:'Suma y Resta de Polinomios',tipo:'opcion',
+   contexto:'El costo de ingredientes del día lunes fue (2x² + 4x + 1) y del martes fue (x² − x + 3).',
+   pregunta:'¿Cuánto se gastó en total en los dos días?',
+   formula:'(2x² + 4x + 1) + (x² − x + 3)',
+   opciones:['3x² + 3x + 4','3x² + 5x + 4','x² + 3x + 4','3x² + 3x − 4'],
+   correctaIdx:0,digito:'3',
+   pista:'Suma coeficientes de igual grado: x², luego x, luego constantes.',
+   explicacion:'2x²+x²=3x², 4x−x=3x, 1+3=4 → 3x²+3x+4'},
+  {nivel:1,tema:'Suma y Resta de Polinomios',tipo:'opcion',
+   contexto:'Las ventas de la mañana generaron (5x² + 2x − 3) pesos y se gastó (2x² − x + 1) en materiales.',
+   pregunta:'¿Cuál fue la ganancia neta de la mañana?',
+   formula:'(5x² + 2x − 3) − (2x² − x + 1)',
+   opciones:['3x² + 3x − 4','3x² + x − 4','3x² + 3x + 4','7x² + x − 4'],
+   correctaIdx:0,digito:'3',
+   pista:'Al restar, cambia los signos del segundo polinomio completo.',
+   explicacion:'5x²−2x²=3x², 2x+x=3x, −3−1=−4 → 3x²+3x−4'},
+  {nivel:1,tema:'Suma y Resta de Polinomios',tipo:'opcion',
+   contexto:'El puesto tiene dos turnos: matutino (4x² − x + 2) y vespertino (2x² + 3x − 1).',
+   pregunta:'¿Cuál es la ganancia diaria total?',
+   formula:'(4x² − x + 2) + (2x² + 3x − 1)',
+   opciones:['6x² + 2x + 1','6x² − 2x + 1','2x² + 2x + 1','6x² + 2x − 1'],
+   correctaIdx:0,digito:'6',
+   pista:'Suma los coeficientes del mismo grado.',
+   explicacion:'4x²+2x²=6x², −x+3x=2x, 2−1=1 → 6x²+2x+1'},
+  /* NIVEL 2 */
+  {nivel:2,tema:'Multiplicación de Polinomios',tipo:'opcion',
+   contexto:'Las gelatinas se venden en bandejas de (x + 3) filas y (x + 2) columnas.',
+   pregunta:'¿Qué expresión representa el total de gelatinas?',
+   formula:'(x + 3)(x + 2)',
+   opciones:['x² + 5x + 6','x² + 6x + 5','x² + 5x + 5','x² + 3x + 6'],
+   correctaIdx:0,digito:'6',
+   pista:'Usa FOIL: Primeros, Externos, Internos, Últimos.',
+   explicacion:'x² + 2x + 3x + 6 = x² + 5x + 6'},
+  {nivel:2,tema:'Multiplicación de Polinomios',tipo:'opcion',
+   contexto:'El precio de venta es (2x − 1) y la cantidad vendida es (x + 4).',
+   pregunta:'¿Cuál es el ingreso total?',
+   formula:'(2x − 1)(x + 4)',
+   opciones:['2x² + 7x − 4','2x² − 7x + 4','2x² + 7x + 4','2x² + 8x − 4'],
+   correctaIdx:0,digito:'2',
+   pista:'Multiplica cada término del primer binomio por cada término del segundo.',
+   explicacion:'2x² + 8x − x − 4 = 2x² + 7x − 4'},
+  {nivel:2,tema:'Multiplicación de Polinomios',tipo:'opcion',
+   contexto:'Una tira decorativa mide (3x + 2) cm de ancho y (x − 1) cm de largo.',
+   pregunta:'¿Cuál es el área de la tira?',
+   formula:'(3x + 2)(x − 1)',
+   opciones:['3x² − x − 2','3x² + x − 2','3x² − x + 2','3x² + 5x − 2'],
+   correctaIdx:0,digito:'3',
+   pista:'3x(x−1) + 2(x−1)',
+   explicacion:'3x² − 3x + 2x − 2 = 3x² − x − 2'},
+  {nivel:2,tema:'Multiplicación de Polinomios',tipo:'opcion',
+   contexto:'El número de gelatinas es (x + 5) y el costo por gelatina es (x − 2).',
+   pregunta:'¿Cuál es el costo total de producción?',
+   formula:'(x + 5)(x − 2)',
+   opciones:['x² + 3x − 10','x² − 3x − 10','x² + 3x + 10','x² + 5x − 10'],
+   correctaIdx:0,digito:'1',
+   pista:'FOIL: x² − 2x + 5x − 10',
+   explicacion:'x² − 2x + 5x − 10 = x² + 3x − 10'},
+  /* NIVEL 3 */
+  {nivel:3,tema:'Productos Notables y Trinomio Cuadrado Perfecto',tipo:'opcion',
+   contexto:'La doña Conchita diseñó un molde cuadrado con lado (x + 5).',
+   pregunta:'¿Cuánto mide el área del molde?',
+   formula:'(x + 5)²',
+   opciones:['x² + 10x + 25','x² + 25','x² + 5x + 25','x² + 10x + 5'],
+   correctaIdx:0,digito:'5',
+   pista:'(a+b)² = a² + 2ab + b²',
+   explicacion:'x² + 2(x)(5) + 25 = x² + 10x + 25'},
+  {nivel:3,tema:'Productos Notables y Trinomio Cuadrado Perfecto',tipo:'opcion',
+   contexto:'La señora calcula (2x − 3)² para la nueva receta de gelatina de vainilla.',
+   pregunta:'¿Cuál es el resultado del trinomio cuadrado perfecto?',
+   formula:'(2x − 3)²',
+   opciones:['4x² − 12x + 9','4x² + 9','4x² − 6x + 9','4x² + 12x + 9'],
+   correctaIdx:0,digito:'4',
+   pista:'(a−b)² = a² − 2ab + b²',
+   explicacion:'4x² − 12x + 9'},
+  {nivel:3,tema:'Productos Notables y Trinomio Cuadrado Perfecto',tipo:'opcion',
+   contexto:'Al calcular las dimensiones del refrigerador se usa el producto de suma por diferencia.',
+   pregunta:'¿Cuál es el resultado?',
+   formula:'(x + 4)(x − 4)',
+   opciones:['x² − 16','x² + 16','x² − 8x − 16','x² − 4'],
+   correctaIdx:0,digito:'1',
+   pista:'(a+b)(a−b) = a² − b²',
+   explicacion:'x² − 16'},
+  {nivel:3,tema:'Productos Notables y Trinomio Cuadrado Perfecto',tipo:'opcion',
+   contexto:'Las canastillas tienen forma de cuadrado con lado (3x + 1) cm.',
+   pregunta:'¿Cuál es el área de la canastilla?',
+   formula:'(3x + 1)²',
+   opciones:['9x² + 6x + 1','9x² + 1','9x² + 3x + 1','3x² + 6x + 1'],
+   correctaIdx:0,digito:'9',
+   pista:'(3x)² + 2(3x)(1) + 1²',
+   explicacion:'9x² + 6x + 1'},
+  /* NIVEL 4 */
+  {nivel:4,tema:'Factorización de Polinomios',tipo:'abierta',
+   contexto:'¡El candado principal! La doña guardó el código aquí. Factoriza para encontrar la clave.',
+   pregunta:'Factoriza el trinomio cuadrado perfecto. Escribe en la forma (x + ?)²',
+   formula:'x² + 6x + 9',
+   respuesta_correcta:['(x+3)^2','(x+3)²','(x + 3)²','(x+3)2'],
+   respuesta_display:'(x + 3)²',digito:'9',
+   pista:'¿Qué número al cuadrado da 9? ¿Y su doble da 6?',
+   explicacion:'√9=3 y 2·3=6 → (x+3)²'},
+  {nivel:4,tema:'Factorización de Polinomios',tipo:'abierta',
+   contexto:'Para optimizar el espacio del puesto, la doña necesita factorizar el área total.',
+   pregunta:'Factoriza completamente. Escribe en la forma a(x + ?)(x + ?)',
+   formula:'2x² + 8x + 6',
+   respuesta_correcta:['2(x+1)(x+3)','2(x + 1)(x + 3)','2(x+3)(x+1)','2(x + 3)(x + 1)'],
+   respuesta_display:'2(x + 1)(x + 3)',digito:'2',
+   pista:'Saca el factor común 2, luego factoriza x² + 4x + 3.',
+   explicacion:'2(x+1)(x+3)'},
+  {nivel:4,tema:'Factorización de Polinomios',tipo:'abierta',
+   contexto:'La producción semanal de gelatinas se modela con este polinomio.',
+   pregunta:'Factoriza completamente el trinomio.',
+   formula:'x² − 5x + 6',
+   respuesta_correcta:['(x-2)(x-3)','(x-3)(x-2)','(x − 2)(x − 3)','(x − 3)(x − 2)'],
+   respuesta_display:'(x − 2)(x − 3)',digito:'6',
+   pista:'Dos números cuya suma sea −5 y producto +6.',
+   explicacion:'(x−2)(x−3)'},
+  {nivel:4,tema:'Factorización de Polinomios',tipo:'abierta',
+   contexto:'El nuevo molde de gelatina tiene área expresada por este trinomio.',
+   pregunta:'Factoriza el trinomio cuadrado perfecto. Escribe en la forma (x − ?)²',
+   formula:'x² − 8x + 16',
+   respuesta_correcta:['(x-4)^2','(x-4)²','(x − 4)²','(x-4)2'],
+   respuesta_display:'(x − 4)²',digito:'4',
+   pista:'¿Qué número al cuadrado da 16? ¿Y su doble da 8?',
+   explicacion:'(x−4)²'},
+  /* NIVEL 5 */
+  {nivel:5,tema:'División de Polinomios',tipo:'opcion',
+   contexto:'¡Último candado! La señora divide la ganancia total entre los días trabajados.',
+   pregunta:'¿Cuál es el resultado de la división?',
+   formula:'(6x² + 9x) ÷ 3x',
+   opciones:['2x + 3','2x − 3','6x + 9','3x + 3'],
+   correctaIdx:0,digito:'7',
+   pista:'Divide cada término del numerador entre 3x.',
+   explicacion:'6x²/3x=2x, 9x/3x=3 → 2x+3'},
+  {nivel:5,tema:'División de Polinomios',tipo:'opcion',
+   contexto:'Las ganancias de 4 semanas se dividen entre los socios del puesto.',
+   pregunta:'Simplifica la expresión algebraica.',
+   formula:'(4x³ − 8x²) ÷ 4x',
+   opciones:['x² − 2x','x³ − 2x','x² + 2x','4x² − 8x'],
+   correctaIdx:0,digito:'8',
+   pista:'Divide cada término entre 4x.',
+   explicacion:'x²−2x'},
+  {nivel:5,tema:'División de Polinomios',tipo:'opcion',
+   contexto:'El costo total de producción se divide entre las horas trabajadas.',
+   pregunta:'¿Cuál es el costo por hora?',
+   formula:'(10x² + 5x) ÷ 5x',
+   opciones:['2x + 1','2x − 1','10x + 1','2x + 5'],
+   correctaIdx:0,digito:'5',
+   pista:'10x²/5x y 5x/5x',
+   explicacion:'2x+1'},
+  {nivel:5,tema:'División de Polinomios',tipo:'opcion',
+   contexto:'La doña reparte la producción mensual (12x³ + 6x²) entre 6x.',
+   pregunta:'¿Cuál es el resultado?',
+   formula:'(12x³ + 6x²) ÷ 6x',
+   opciones:['2x² + x','2x² − x','12x² + 6x','6x² + x'],
+   correctaIdx:0,digito:'2',
+   pista:'Divide cada término entre 6x.',
+   explicacion:'2x²+x'}
+];
+
+var RECETAS = [
+  '🫙 Mezcla 500g de leche condensada con 200ml de leche evaporada. Añade 3 sobres de grenetina. ¡Refrigera 4 horas!',
+  '🍓 Licúa 250g de fresas frescas, añade azúcar y grenetina disuelta. ¡El secreto son las fresas de temporada!',
+  '🥭 Tritura 3 mangos maduros con yogurt, grenetina y chamoy. ¡El sabor favorito de Zitácuaro!',
+  '🍋 Zumo de 4 limones, leche condensada y grenetina. ¡Simple pero exquisita!',
+  '🍫 Capas de gelatina de colores con base de chocolate. ¡La más vendida de Las Conchitas!'
+];
+
+/* ═══════════ ESTADO ═══════════ */
+var E = {
+  nivel:0, preguntas:[], digitos:[], puntos:0,
+  intentos:[0,0,0,0,0], libres:0,
+  timer:null, segundos:1200, equipo:''
+};
+
+/* ═══════════ UTILIDADES ═══════════ */
+function mezclar(arr) {
+  var a = arr.slice();
+  for (var i = a.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function rotarOpciones(p) {
+  if (p.tipo !== 'opcion') return p;
+  var c = JSON.parse(JSON.stringify(p));
+  var correctaTxt = p.opciones[p.correctaIdx];
+  c.opciones = mezclar(p.opciones);
+  c.correcta = c.opciones.indexOf(correctaTxt);
+  return c;
+}
+
+function seleccionar() {
+  var res = [];
+  for (var n = 1; n <= 5; n++) {
+    var grupo = BANCO.filter(function(q){return q.nivel===n;});
+    res.push(rotarOpciones(mezclar(grupo)[0]));
+  }
+  return res;
+}
+
+function pantalla(id) {
+  var ss = document.querySelectorAll('#esc-root .screen');
+  for (var i=0; i<ss.length; i++) ss[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function gt(id) { return document.getElementById(id); }
+
+/* ═══════════ INICIO ═══════════ */
+function iniciarJuego() {
+  var ni = gt('nombre-equipo');
+  // ── Nombre obligatorio: bloquear si está vacío ───────────────
+  if (!ni || !ni.value.trim()) {
+    if (ni) {
+      ni.style.border    = '3px solid #e74c3c';
+      ni.style.animation = 'shake .35s';
+      ni.placeholder     = '⚠ Escribe el nombre de tu equipo';
+      setTimeout(function(){
+        ni.style.border    = '3px solid #ffd700';
+        ni.style.animation = '';
+        ni.placeholder     = 'Nombre de tu equipo...';
+      }, 1800);
+    }
+    return; // no continuar sin nombre
+  }
+  audioInicio();
+  E.equipo = ni.value.trim();
+  E.nivel=0; E.puntos=0; E.digitos=[]; E.intentos=[0,0,0,0,0]; E.libres=0; E.segundos=1200;
+  E.preguntas = seleccionar();
+  gt('badge-equipo').textContent = E.equipo;
+  gt('pts-display').textContent  = '0';
+  gt('temporizador-box').className = 'temporizador';
+  construirCandados(); construirCaja(); mostrarPregunta(); iniciarTimer();
+  pantalla('s-game');
+}
+
+function construirCandados() {
+  var cont = gt('lista-candados'); cont.innerHTML = '';
+  for (var i=0; i<5; i++) {
+    var d = document.createElement('div');
+    d.className = 'candado-item' + (i===0?' activo':'');
+    d.id = 'cand-'+i;
+    d.innerHTML = '<div class="icon">&#128274;</div><div class="info"><div class="num">Candado '+(i+1)+'</div><div class="tema">'+E.preguntas[i].tema+'</div></div>';
+    cont.appendChild(d);
+  }
+}
+
+function construirCaja() {
+  var cod = gt('safe-codigo'); cod.innerHTML='';
+  for (var i=0; i<5; i++) {
+    var d=document.createElement('div'); d.className='codigo-digit'; d.id='dig-'+i; d.textContent='?'; cod.appendChild(d);
+  }
+  var lk = gt('safe-locks'); lk.innerHTML='';
+  for (var j=0; j<5; j++) {
+    var s=document.createElement('span'); s.className='mini-lock'; s.id='mk-'+j; s.innerHTML='&#128274;'; lk.appendChild(s);
+  }
+  gt('safe-bar').style.width='0%';
+  gt('safe-hint').textContent='Resuelve cada acertijo para descubrir los dígitos del código secreto.';
+}
+
+/* ═══════════ PREGUNTA ═══════════ */
+function mostrarPregunta() {
+  var p = E.preguntas[E.nivel];
+  gt('nivel-badge').textContent = 'Candado '+(E.nivel+1);
+  gt('nivel-desc').textContent  = p.tema;
+  for (var i=0; i<5; i++) {
+    var el=gt('cand-'+i); if(!el) continue;
+    el.className = i<E.nivel ? 'candado-item resuelto' : i===E.nivel ? 'candado-item activo' : 'candado-item';
+    el.querySelector('.icon').innerHTML = i<E.nivel ? '&#128275;' : '&#128274;';
+  }
+  var h = '<div class="contexto-card"><div class="ctx-titulo">&#128205; Contexto del Puesto Las Conchitas</div><div class="ctx-texto">'+p.contexto+'</div></div>';
+  h += '<div class="pregunta-box"><div class="q-label">&#129513; Acertijo Algebraico</div><div class="q-texto">'+p.pregunta+'</div><div class="q-formula">'+p.formula+'</div></div>';
+  if (p.tipo==='opcion') {
+    h += '<div class="opciones-grid" id="ogrid">';
+    var L=['A','B','C','D'];
+    for (var k=0; k<p.opciones.length; k++) {
+      h += '<button class="opcion-btn" data-op="'+k+'"><span class="letra">'+L[k]+'</span>'+p.opciones[k]+'</button>';
+    }
+    h += '</div>';
+  } else {
+    h += '<div class="resp-abierta"><div class="resp-input-wrap"><input class="resp-input" id="resp-input" placeholder="Escribe tu respuesta..."><button class="btn-verificar" id="bverif">&#10003; Verificar</button></div></div>';
+  }
+  h += '<div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn-siguiente" id="btn-sig">Siguiente Candado &rarr;</button></div>';
+  var panel = gt('pregunta-panel');
+  panel.innerHTML = h;
+  panel.scrollTop = 0;
+
+  // Adjuntar eventos a botones recién creados
+  var btns = panel.querySelectorAll('[data-op]');
+  for (var b=0; b<btns.length; b++) {
+    btns[b].addEventListener('click', (function(btn){
+      return function(){ desbloquear(); verificarOpcion(parseInt(btn.getAttribute('data-op'),10)); };
+    })(btns[b]));
+  }
+  var bv = gt('bverif'); if(bv) bv.addEventListener('click', function(){ desbloquear(); verificarAbierta(); });
+  var bs = gt('btn-sig'); if(bs) bs.addEventListener('click', function(){ desbloquear(); siguienteCandado(); });
+  var ri = gt('resp-input');
+  if(ri) ri.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.keyCode===13){ desbloquear(); verificarAbierta(); } });
+}
+
+/* ═══════════ VERIFICACIÓN ═══════════ */
+function verificarOpcion(idx) {
+  var p = E.preguntas[E.nivel];
+  var btns = document.querySelectorAll('#ogrid .opcion-btn');
+  for (var i=0; i<btns.length; i++) btns[i].disabled=true;
+  if (idx===p.correcta) {
+    audioCorrecto();
+    btns[idx].classList.add('correcta');
+    var pts = puntos();
+    E.puntos += pts; E.libres++;
+    gt('pts-display').textContent = E.puntos;
+    revelar(E.nivel, p.digito);
+    insertarFeedback(true, '&#10003; ¡Correcto! +'+pts+' puntos — '+p.explicacion);
+  } else {
+    audioIncorrecto();
+    btns[idx].classList.add('incorrecta');
+    if(btns[p.correcta]) btns[p.correcta].classList.add('correcta');
+    E.intentos[E.nivel]++;
+    insertarFeedback(false, '&#10007; Incorrecto. Respuesta: '+p.opciones[p.correcta]+' — '+p.explicacion);
+  }
+  var bs = gt('btn-sig'); if(bs) bs.classList.add('visible');
+}
+
+function insertarFeedback(ok, msg) {
+  var panel = gt('pregunta-panel');
+  var fb = document.createElement('div');
+  fb.className = ok ? 'feedback-ok' : 'feedback-mal';
+  fb.innerHTML = msg;
+  var grid = gt('ogrid');
+  if (grid) grid.parentNode.insertBefore(fb, grid.nextSibling);
+  else panel.appendChild(fb);
+}
+
+function verificarAbierta() {
+  var p = E.preguntas[E.nivel];
+  var inp = gt('resp-input'); if(!inp) return;
+  var val = inp.value.trim().toLowerCase().replace(/\s+/g,'');
+  var ok  = p.respuesta_correcta.map(function(r){return r.toLowerCase().replace(/\s+/g,'');}).indexOf(val) !== -1;
+  inp.disabled=true;
+  var bv=gt('bverif'); if(bv) bv.disabled=true;
+  var panel = gt('pregunta-panel');
+  var fb = document.createElement('div');
+  if (ok) {
+    audioCorrecto();
+    fb.className='feedback-ok';
+    var pts=puntos(); E.puntos+=pts; E.libres++;
+    gt('pts-display').textContent=E.puntos;
+    revelar(E.nivel,p.digito);
+    fb.innerHTML='&#10003; ¡Correcto! +'+pts+' puntos — '+p.explicacion;
+  } else {
+    audioIncorrecto();
+    fb.className='feedback-mal';
+    E.intentos[E.nivel]++;
+    fb.innerHTML='&#10007; Incorrecto. La respuesta es: <strong>'+p.respuesta_display+'</strong> — '+p.explicacion;
+  }
+  var rw = inp.parentNode; if(rw) rw.parentNode.insertBefore(fb,rw.nextSibling);
+  else panel.appendChild(fb);
+  var bs=gt('btn-sig'); if(bs) bs.classList.add('visible');
+}
+
+function puntos() { return Math.max(20, 100 - E.intentos[E.nivel]*25); }
+
+function revelar(n, d) {
+  audioCandado();
+  E.digitos[n]=d;
+  var el=gt('dig-'+n); if(el){el.textContent=d; el.classList.add('revelado');}
+  var mk=gt('mk-'+n);  if(mk){mk.innerHTML='&#128275;'; mk.classList.add('open');}
+  var bar=gt('safe-bar'); if(bar) bar.style.width=((n+1)/5*100)+'%';
+  var h=gt('safe-hint'); if(h) h.textContent=n<4?'¡Dígito '+(n+1)+' revelado! Quedan '+(4-n)+' candados.':'¡Todos los dígitos revelados!';
+}
+
+function siguienteCandado() {
+  if (E.nivel>=4) { E.libres===5 ? ganar() : ganarParcial(); return; }
+  E.nivel++;
+  mostrarPregunta();
+}
+
+/* ═══════════ PISTA ═══════════ */
+function mostrarPista() {
+  audioPista();
+  var p=E.preguntas[E.nivel];
+  gt('modal-texto').textContent=p.pista;
+  gt('modal-pista').classList.add('abierto');
+  E.puntos=Math.max(0,E.puntos-10);
+  gt('pts-display').textContent=E.puntos;
+}
+function cerrarPista() { gt('modal-pista').classList.remove('abierto'); }
+
+/* ═══════════ TIMER ═══════════ */
+function iniciarTimer() {
+  if(E.timer) clearInterval(E.timer);
+  E.timer=setInterval(function(){
+    E.segundos--;
+    var m=Math.floor(E.segundos/60), s=E.segundos%60;
+    var d=gt('t-display'); if(d) d.textContent=m+':'+(s<10?'0':'')+s;
+    if(E.segundos<=120){var tb=gt('temporizador-box'); if(tb) tb.className='temporizador urgente'; if(E.segundos%10===0) audioUrgente();}
+    if(E.segundos<=0){clearInterval(E.timer); perder();}
+  },1000);
+}
+
+/* ═══════════ FIN DE JUEGO ═══════════ */
+function ganar() {
+  audioVictoria();
+  clearInterval(E.timer);
+  var m=Math.floor(E.segundos/60), s=E.segundos%60, ss=(s<10?'0':'')+s;
+  gt('win-titulo').innerHTML='&#161;RECETA LIBERADA!'; gt('win-titulo').style.fontSize='';
+  gt('win-equipo-name').innerHTML='&#127942; '+E.equipo;
+  gt('win-pts').textContent=E.puntos;
+  gt('win-time').textContent=m+':'+ss;
+  gt('win-code').textContent=E.digitos.join('');
+  if(E.libres===5){
+    gt('receta-texto').textContent=RECETAS[Math.floor(Math.random()*RECETAS.length)];
+    gt('receta-box').style.display='block';
+    gt('parcial-box').style.display='none';
+    confetti();
+  } else {
+    gt('receta-box').style.display='none';
+    gt('parcial-box').style.display='none';
+  }
+  pantalla('s-win');
+  // ── Anunciar el equipo ganador por voz tras la fanfarria ──────
+  if (window.speechSynthesis) {
+    // Esperar ~3s a que la fanfarria llegue a su punto álgido
+    setTimeout(function() {
+      window.speechSynthesis.cancel(); // limpiar cola previa
+      var msg = new SpeechSynthesisUtterance();
+      msg.text = '¡Felicidades! El equipo ' + E.equipo + ' ha liberado la receta secreta. ¡Excelente trabajo!';
+      msg.lang  = 'es-MX';
+      msg.pitch = 1.1;
+      msg.rate  = 0.92;
+      msg.volume = 1.0;
+      // Intentar voz en español; si no hay, usar la disponible
+      var voces = window.speechSynthesis.getVoices();
+      var vozES = null;
+      for (var i = 0; i < voces.length; i++) {
+        if (voces[i].lang && voces[i].lang.indexOf('es') === 0) {
+          vozES = voces[i];
+          if (voces[i].lang === 'es-MX' || voces[i].lang === 'es-419') break;
+        }
+      }
+      if (vozES) msg.voice = vozES;
+      window.speechSynthesis.speak(msg);
+    }, 3000);
+  }
+}
+
+function ganarParcial() {
+  clearInterval(E.timer);
+  var m=Math.floor(E.segundos/60), s=E.segundos%60, ss=(s<10?'0':'')+s;
+  gt('win-titulo').innerHTML='&#161;CASI LO LOGRAS!'; gt('win-titulo').style.fontSize='64px';
+  gt('win-equipo-name').innerHTML='&#128270; '+E.equipo;
+  gt('win-pts').textContent=E.puntos;
+  gt('win-time').textContent=m+':'+ss;
+  gt('win-code').textContent='?????';
+  gt('receta-box').style.display='none';
+  var f=5-E.libres;
+  gt('parcial-texto').innerHTML=(f===1?'Te faltó <strong>1 candado</strong>':'Te faltaron <strong>'+f+' candados</strong>')+' por resolver correctamente.<br>¡Repasa los temas y vuelve a intentarlo!';
+  gt('parcial-box').style.display='block';
+  pantalla('s-win');
+}
+
+function perder() { audioDerrota(); pantalla('s-lose'); }
+
+function reiniciar() {
+  if(E.timer) clearInterval(E.timer);
+  var el;
+  el=gt('win-titulo'); if(el){el.innerHTML='&#161;RECETA LIBERADA!'; el.style.fontSize='';}
+  el=gt('receta-box');  if(el) el.style.display='none';
+  el=gt('parcial-box'); if(el) el.style.display='none';
+  el=gt('confetti-c');  if(el) el.innerHTML='';
+  pantalla('s-intro');
+}
+
+/* ═══════════ CONFETTI ═══════════ */
+function confetti() {
+  var c=gt('confetti-c'); if(!c) return; c.innerHTML='';
+  var cols=['#ffd700','#ff8c00','#e74c3c','#27ae60','#8e44ad','#2980b9'];
+  for(var i=0;i<70;i++){
+    var p=document.createElement('div');
+    var col=cols[Math.floor(Math.random()*cols.length)];
+    var sz=Math.random()*12+6, lf=Math.random()*100;
+    var dr=(Math.random()*3+2).toFixed(1), dl=(Math.random()*3).toFixed(1);
+    p.style.cssText='position:absolute;left:'+lf+'%;top:-20px;width:'+sz+'px;height:'+sz+'px;background:'+col+';border-radius:'+(Math.random()>.5?'50%':'2px')+';animation:cfFall '+dr+'s '+dl+'s linear forwards;opacity:.9;';
+    c.appendChild(p);
+  }
+}
+
+/* ═══════════ VINCULAR EVENTOS ═══════════ */
+function vincular() {
+  var b;
+  b=gt('btn-iniciar');       if(b) b.addEventListener('click', function(){ desbloquear(); iniciarJuego(); });
+  b=gt('btn-pista');         if(b) b.addEventListener('click', function(){ desbloquear(); mostrarPista(); });
+  b=gt('btn-reiniciar-win'); if(b) b.addEventListener('click', function(){ desbloquear(); reiniciar(); });
+  b=gt('btn-reiniciar-lose');if(b) b.addEventListener('click', function(){ desbloquear(); reiniciar(); });
+  b=gt('btn-cerrar-pista');  if(b) b.addEventListener('click', function(){ desbloquear(); cerrarPista(); });
+  b=gt('nombre-equipo');
+  if(b) b.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.keyCode===13){ desbloquear(); iniciarJuego(); }
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', vincular);
+} else {
+  vincular();
+}
+// Desbloquear audio en cualquier interacción con el documento
+document.addEventListener('click',      function(){ desbloquear(); }, {passive:true});
+document.addEventListener('touchstart', function(){ desbloquear(); }, {passive:true});
+document.addEventListener('keydown',    function(){ desbloquear(); }, {passive:true});
+// Pre-cargar voces de síntesis de voz (algunos navegadores las cargan de forma lazy)
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = function() {
+      window.speechSynthesis.getVoices();
+    };
+  }
+}
+
+})(); // fin IIFE
+</script>
+</body>
+</html>
